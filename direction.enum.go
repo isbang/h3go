@@ -46,3 +46,57 @@ const (
 
 // Valid digits will be less than this value. Same value as INVALID_DIGIT.
 const NUM_DIGITS = int(INVALID_DIGIT)
+
+// rotate60ccw Rotates indexing digit 60 degrees counter-clockwise.
+func (digit Direction) rotate60ccw() Direction {
+	switch digit {
+	case K_AXES_DIGIT:
+		return IK_AXES_DIGIT
+	case IK_AXES_DIGIT:
+		return I_AXES_DIGIT
+	case I_AXES_DIGIT:
+		return IJ_AXES_DIGIT
+	case IJ_AXES_DIGIT:
+		return J_AXES_DIGIT
+	case J_AXES_DIGIT:
+		return JK_AXES_DIGIT
+	case JK_AXES_DIGIT:
+		return K_AXES_DIGIT
+	default:
+		return digit
+	}
+}
+
+// rotate60cw rotates indexing digit 60 degrees clockwise.
+func (digit Direction) rotate60cw() Direction {
+	switch digit {
+	case K_AXES_DIGIT:
+		return JK_AXES_DIGIT
+	case JK_AXES_DIGIT:
+		return J_AXES_DIGIT
+	case J_AXES_DIGIT:
+		return IJ_AXES_DIGIT
+	case IJ_AXES_DIGIT:
+		return I_AXES_DIGIT
+	case I_AXES_DIGIT:
+		return IK_AXES_DIGIT
+	case IK_AXES_DIGIT:
+		return K_AXES_DIGIT
+	default:
+		return digit
+	}
+}
+
+// _rotate60ccw Rotates indexing digit 60 degrees counter-clockwise.
+//
+// Deprecated: Use (Direction).rotate60ccw instead
+func _rotate60ccw(digit Direction) Direction {
+	return digit.rotate60ccw()
+}
+
+// _rotate60cw rotates indexing digit 60 degrees clockwise.
+//
+// Deprecated: Use (Direction).rotate60cw instead
+func _rotate60cw(digit Direction) Direction {
+	return digit.rotate60cw()
+}
