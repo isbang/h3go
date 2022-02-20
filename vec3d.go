@@ -32,9 +32,9 @@ func _pointSquareDist(v1, v2 *Vec3d) float64 {
 	return _square(v1.x-v2.x) + _square(v1.y-v2.y) + _square(v1.z-v2.z)
 }
 
-// _geoToVec3d calculate the 3D coordinate on unit sphere from the latitude and
+// geoToVec3d calculate the 3D coordinate on unit sphere from the latitude and
 // longitude.
-func _geoToVec3d(geo *GeoCoord) *Vec3d {
+func geoToVec3d(geo *GeoCoord) *Vec3d {
 	r := math.Cos(geo.lat)
 
 	return &Vec3d{
@@ -42,4 +42,16 @@ func _geoToVec3d(geo *GeoCoord) *Vec3d {
 		y: math.Cos(geo.lon) * r,
 		z: math.Sin(geo.lon) * r,
 	}
+}
+
+// _geoToVec3d calculate the 3D coordinate on unit sphere from the latitude and
+// longitude.
+//
+// Deprecated: Use geoToVec3d instead.
+func _geoToVec3d(geo *GeoCoord, v *Vec3d) {
+	r := math.Cos(geo.lat)
+
+	v.z = math.Sin(geo.lat)
+	v.x = math.Cos(geo.lon) * r
+	v.y = math.Sin(geo.lon) * r
 }
