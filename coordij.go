@@ -20,3 +20,16 @@ type CoordIJ struct {
 	i int // i component
 	j int // j component
 }
+
+// ToIJK transforms coordinates from the IJ coordinate system to the IJK+
+// coordinate system.
+func (ij *CoordIJ) ToIJK() CoordIJK {
+	ijk := CoordIJK{
+		i: ij.i,
+		j: ij.j,
+		k: 0,
+	}
+
+	_ijkNormalize(&ijk)
+	return ijk
+}

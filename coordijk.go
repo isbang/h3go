@@ -44,11 +44,11 @@ func (ijk *CoordIJK) SetIJK(i, j, k int) {
 }
 
 // ToHex2d finds the center point in 2D cartesian coordinates of a hex.
-func (ijk *CoordIJK) ToHex2d() *Vec2d {
+func (ijk *CoordIJK) ToHex2d() Vec2d {
 	i := ijk.i - ijk.k
 	j := ijk.j - ijk.k
 
-	return &Vec2d{
+	return Vec2d{
 		x: float64(i) - 0.5*float64(j),
 		y: float64(j) * M_SQRT3_2,
 	}
@@ -101,12 +101,12 @@ func (ijk *CoordIJK) Normalize() {
 	}
 }
 
-// UnitToDigit determines the H3 digit corresponding to a unit vector in ijk
+// unitIjkToDigit determines the H3 digit corresponding to a unit vector in ijk
 // coordinates.
 //
 // Return the H3 digit (0-6) corresponding to the ijk unit vector, or
 // INVALID_DIGIT on failure.
-func (ijk *CoordIJK) UnitToDigit() Direction {
+func (ijk *CoordIJK) unitIjkToDigit() Direction {
 	c := *ijk
 	_ijkNormalize(&c)
 
@@ -266,13 +266,6 @@ func (ijk *CoordIJK) downAp3r() {
 	_ijkNormalize(ijk)
 }
 
-// ToCube convert IJK coordinates to cube coordinates, in place
-func (ijk *CoordIJK) ToCube() {
-	ijk.i = -ijk.i + ijk.k
-	ijk.j = ijk.j - ijk.k
-	ijk.k = -ijk.i - ijk.j
-}
-
 // _setIJK sets an IJK coordinate to the specified component values.
 //
 // Deprecated: Use (*CoordIJK).SetIJK instead.
@@ -280,8 +273,106 @@ func _setIJK(ijk *CoordIJK, i, j, k int) {
 	ijk.SetIJK(i, j, k)
 }
 
+// hex2dToCoordIJK determine the containing hex in ijk+ coordinates for a 2D
+// cartesian coordinate vector (from DGGRID).
+func hex2dToCoordIJK(v *Vec2d) (h CoordIJK) {
+	var a1, a2 float64
+	var x1, x2 float64
+	var m1, m2 int
+	var r1, r2 float64
+
+	// quantize into the ij system and then normalize
+	h.k = 0
+
+	a1 = math.Abs(v.x)
+	a2 = math.Abs(v.y)
+
+	// first do a reverse conversion
+	x2 = a2 / M_SIN60
+	x1 = a1 + x2/2.0
+
+	// check if we have the center of a hex
+	m1 = int(x1)
+	m2 = int(x2)
+
+	// otherwise round correctly
+	r1 = x1 - float64(m1)
+	r2 = x2 - float64(m2)
+
+	if r1 < 0.5 {
+		if r1 < 1.0/3.0 {
+			if r2 < (1.0+r1)/2.0 {
+				h.i = m1
+				h.j = m2
+			} else {
+				h.i = m1
+				h.j = m2 + 1
+			}
+		} else {
+			if r2 < (1.0 - r1) {
+				h.j = m2
+			} else {
+				h.j = m2 + 1
+			}
+
+			if (1.0-r1) <= r2 && r2 < (2.0*r1) {
+				h.i = m1 + 1
+			} else {
+				h.i = m1
+			}
+		}
+	} else {
+		if r1 < 2.0/3.0 {
+			if r2 < (1.0 - r1) {
+				h.j = m2
+			} else {
+				h.j = m2 + 1
+			}
+
+			if (2.0*r1-1.0) < r2 && r2 < (1.0-r1) {
+				h.i = m1
+			} else {
+				h.i = m1 + 1
+			}
+		} else {
+			if r2 < (r1 / 2.0) {
+				h.i = m1 + 1
+				h.j = m2
+			} else {
+				h.i = m1 + 1
+				h.j = m2 + 1
+			}
+		}
+	}
+
+	// now fold across the axes if necessary
+
+	if v.x < 0.0 {
+		if (h.j % 2) == 0 { // even
+			axisi := int64(h.j) / int64(2)
+			diff := int64(h.i) - axisi
+			h.i = int(int64(h.i) - 2*diff)
+		} else {
+			axisi := int64(h.j+1) / 2
+			diff := int64(h.i) - axisi
+			h.i = int(int64(h.i) - (2*diff + 1))
+		}
+	}
+
+	if v.y < 0.0 {
+		h.i = h.i - (2*h.j+1)/2
+		h.j = -1 * h.j
+	}
+
+	_ijkNormalize(&h)
+
+	return h
+}
+
 // _hex2dToCoordIJK determine the containing hex in ijk+ coordinates for a 2D
 // cartesian coordinate vector (from DGGRID).
+//
+// Deprecated: Use hex2dToCoordIJK instead.
 func _hex2dToCoordIJK(v *Vec2d, h *CoordIJK) {
 	var a1, a2 float64
 	var x1, x2 float64
@@ -375,6 +466,8 @@ func _hex2dToCoordIJK(v *Vec2d, h *CoordIJK) {
 }
 
 // _ijkToHex2d finds the center point in 2D cartesian coordinates of a hex.
+//
+// Deprecated: Use (*CoordIJK).ToHex2d instead.
 func _ijkToHex2d(h *CoordIJK, v *Vec2d) {
 	i := h.i - h.k
 	j := h.j - h.k
@@ -389,14 +482,36 @@ func _ijkMatches(c1, c2 *CoordIJK) bool {
 	return c1.i == c2.i && c1.j == c2.j && c1.k == c2.k
 }
 
+// ijkAdd adds two ijk coordinates.
+func ijkAdd(h1, h2 *CoordIJK) CoordIJK {
+	return CoordIJK{
+		i: h1.i + h2.i,
+		j: h1.j + h2.j,
+		k: h1.k + h2.k,
+	}
+}
+
 // _ijkAdd adds two ijk coordinates.
+//
+// Deprecated: Use ijkAdd instead.
 func _ijkAdd(h1, h2 *CoordIJK, sum *CoordIJK) {
 	sum.i = h1.i + h2.i
 	sum.j = h1.j + h2.j
 	sum.k = h1.k + h2.k
 }
 
+// ijkSub subtracts two ijk coordinates.
+func ijkSub(h1, h2 *CoordIJK) CoordIJK {
+	return CoordIJK{
+		i: h1.i - h2.i,
+		j: h1.j - h2.j,
+		k: h1.k - h2.k,
+	}
+}
+
 // _ijkSub subtracts two ijk coordinates.
+//
+// Deprecated: Use ijkSub instead.
 func _ijkSub(h1, h2 *CoordIJK, diff *CoordIJK) {
 	diff.i = h1.i - h2.i
 	diff.j = h1.j - h2.j
@@ -424,9 +539,9 @@ func _ijkNormalize(c *CoordIJK) {
 // Return the H3 digit (0-6) corresponding to the ijk unit vector, or
 // INVALID_DIGIT on failure.
 //
-// Deprecated: Use (*CoordIJK).UnitToDigit instead.
+// Deprecated: Use (*CoordIJK).unitIjkToDigit instead.
 func _unitIjkToDigit(ijk *CoordIJK) Direction {
-	return ijk.UnitToDigit()
+	return ijk.unitIjkToDigit()
 }
 
 // _upAp7 finds the normalized ijk coordinates of the indexing parent of a cell
@@ -515,13 +630,26 @@ func ijkDistance(c1, c2 *CoordIJK) int {
 
 // ijkToIj transforms coordinates from the IJK+ coordinate system to the IJ
 // coordinate system.
+//
+// Deprecated: Use (*CoordIJK).ToIJ instead.
 func ijkToIj(ijk *CoordIJK, ij *CoordIJ) {
 	ij.i = ijk.i - ijk.k
 	ij.j = ijk.j - ijk.k
 }
 
+// ToIJ transforms coordinates from the IJK+ coordinate system to the IJ
+// coordinate system.
+func (ijk *CoordIJK) ToIJ() CoordIJ {
+	return CoordIJ{
+		i: ijk.i - ijk.k,
+		j: ijk.j - ijk.k,
+	}
+}
+
 // ijToIjk transforms coordinates from the IJ coordinate system to the IJK+
 // coordinate system.
+//
+// Deprecated: Use (*CoordIJ).ToIJK instead.
 func ijToIjk(ij *CoordIJ, ijk *CoordIJK) {
 	ijk.i = ij.i
 	ijk.j = ij.j
@@ -531,10 +659,10 @@ func ijToIjk(ij *CoordIJ, ijk *CoordIJK) {
 }
 
 // ijkToCube convert IJK coordinates to cube coordinates, in place.
-//
-// Deprecated: Use (*CoordIJK).ToCube instead
 func ijkToCube(ijk *CoordIJK) {
-	ijk.ToCube()
+	ijk.i = -ijk.i + ijk.k
+	ijk.j = ijk.j - ijk.k
+	ijk.k = -ijk.i - ijk.j
 }
 
 // cubeToIjk convert cube coordinates to IJK coordinates, in place.
