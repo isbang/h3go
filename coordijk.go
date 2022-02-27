@@ -270,7 +270,9 @@ func (ijk *CoordIJK) downAp3r() {
 //
 // Deprecated: Use (*CoordIJK).SetIJK instead.
 func _setIJK(ijk *CoordIJK, i, j, k int) {
-	ijk.SetIJK(i, j, k)
+	ijk.i = i
+	ijk.j = j
+	ijk.k = k
 }
 
 // hex2dToCoordIJK determine the containing hex in ijk+ coordinates for a 2D
@@ -522,7 +524,9 @@ func _ijkSub(h1, h2 *CoordIJK, diff *CoordIJK) {
 //
 // Deprecated: Use (*CoordIJK).Scale instead.
 func _ijkScale(c *CoordIJK, factor int) {
-	c.Scale(factor)
+	c.i *= factor
+	c.j *= factor
+	c.k *= factor
 }
 
 // _ijkNormalize normalizes ijk coordinates by setting the components to the
@@ -530,7 +534,41 @@ func _ijkScale(c *CoordIJK, factor int) {
 //
 // Deprecated: Use (*CoordIJK).Normalize instead.
 func _ijkNormalize(c *CoordIJK) {
-	c.Normalize()
+	// remove any negative values
+	if c.i < 0 {
+		c.j -= c.i
+		c.k -= c.i
+		c.i = 0
+	}
+
+	if c.j < 0 {
+		c.i -= c.j
+		c.k -= c.j
+		c.j = 0
+	}
+
+	if c.k < 0 {
+		c.i -= c.k
+		c.j -= c.k
+		c.k = 0
+	}
+
+	// remove the min value if needed
+	min := c.i
+
+	if c.j < min {
+		min = c.j
+	}
+
+	if c.k < min {
+		min = c.k
+	}
+
+	if min > 0 {
+		c.i -= min
+		c.j -= min
+		c.k -= min
+	}
 }
 
 // _unitIjkToDigit determines the H3 digit corresponding to a unit vector in ijk
@@ -541,7 +579,18 @@ func _ijkNormalize(c *CoordIJK) {
 //
 // Deprecated: Use (*CoordIJK).unitIjkToDigit instead.
 func _unitIjkToDigit(ijk *CoordIJK) Direction {
-	return ijk.unitIjkToDigit()
+	c := *ijk
+	_ijkNormalize(&c)
+
+	digit := INVALID_DIGIT
+	for i := CENTER_DIGIT; i < Direction(NUM_DIGITS); i++ {
+		if _ijkMatches(&c, &UNIT_VECS[i]) {
+			digit = i
+			break
+		}
+	}
+
+	return digit
 }
 
 // _upAp7 finds the normalized ijk coordinates of the indexing parent of a cell
@@ -549,7 +598,14 @@ func _unitIjkToDigit(ijk *CoordIJK) Direction {
 //
 // Deprecated: Use (*CoordIJK).upAp7 instead.
 func _upAp7(ijk *CoordIJK) {
-	ijk.upAp7()
+	// convert to CoordIJ
+	i := ijk.i - ijk.k
+	j := ijk.j - ijk.k
+
+	ijk.i = int(math.Round(float64((3*i - j) / 7.0)))
+	ijk.j = int(math.Round(float64((i + 2*j) / 7.0)))
+	ijk.k = 0
+	_ijkNormalize(ijk)
 }
 
 // _upAp7r finds the normalized ijk coordinates of the indexing parent of a cell
@@ -557,7 +613,14 @@ func _upAp7(ijk *CoordIJK) {
 //
 // Deprecated: Use (*CoordIJK).upAp7r instead.
 func _upAp7r(ijk *CoordIJK) {
-	ijk.upAp7r()
+	// convert to CoordIJ
+	i := ijk.i - ijk.k
+	j := ijk.j - ijk.k
+
+	ijk.i = int(math.Round(float64((2*i + j) / 7.0)))
+	ijk.j = int(math.Round(float64((3*j - i) / 7.0)))
+	ijk.k = 0
+	_ijkNormalize(ijk)
 }
 
 // _downAp7 finds the normalized ijk coordinates of the hex centered on the
@@ -566,7 +629,19 @@ func _upAp7r(ijk *CoordIJK) {
 //
 // Deprecated: Use (*CoordIJK).downAp7 instead.
 func _downAp7(ijk *CoordIJK) {
-	ijk.downAp7()
+	// res r unit vectors in res r+1
+	iVec := CoordIJK{3, 0, 1}
+	jVec := CoordIJK{1, 3, 0}
+	kVec := CoordIJK{0, 1, 3}
+
+	_ijkScale(&iVec, ijk.i)
+	_ijkScale(&jVec, ijk.j)
+	_ijkScale(&kVec, ijk.k)
+
+	_ijkAdd(&iVec, &jVec, ijk)
+	_ijkAdd(ijk, &kVec, ijk)
+
+	_ijkNormalize(ijk)
 }
 
 // _downAp7r finds the normalized ijk coordinates of the hex centered on the
@@ -575,7 +650,19 @@ func _downAp7(ijk *CoordIJK) {
 //
 // Deprecated: Use (*CoordIJK).downAp7r instead.
 func _downAp7r(ijk *CoordIJK) {
-	ijk.downAp7r()
+	// res r unit vectors in res r+1
+	iVec := CoordIJK{3, 1, 0}
+	jVec := CoordIJK{0, 3, 1}
+	kVec := CoordIJK{1, 0, 3}
+
+	_ijkScale(&iVec, ijk.i)
+	_ijkScale(&jVec, ijk.j)
+	_ijkScale(&kVec, ijk.k)
+
+	_ijkAdd(&iVec, &jVec, ijk)
+	_ijkAdd(ijk, &kVec, ijk)
+
+	_ijkNormalize(ijk)
 }
 
 // _neighbor finds the normalized ijk coordinates of the hex in the specified
@@ -583,7 +670,10 @@ func _downAp7r(ijk *CoordIJK) {
 //
 // Deprecated: Use (*CoordIJK).neighbor instead.
 func _neighbor(ijk *CoordIJK, digit Direction) {
-	ijk.neighbor(digit)
+	if digit > CENTER_DIGIT && digit < Direction(NUM_DIGITS) {
+		_ijkAdd(ijk, &UNIT_VECS[digit], ijk)
+		_ijkNormalize(ijk)
+	}
 }
 
 // _ijkRotate60ccw rotates ijk coordinates 60 degrees counter-clockwise.
@@ -591,14 +681,38 @@ func _neighbor(ijk *CoordIJK, digit Direction) {
 //
 // Deprecated: Use (*CoordIJK).Rotate60ccw instead.
 func _ijkRotate60ccw(ijk *CoordIJK) {
-	ijk.Rotate60ccw()
+	// unit vector rotations
+	iVec := CoordIJK{1, 1, 0}
+	jVec := CoordIJK{0, 1, 1}
+	kVec := CoordIJK{1, 0, 1}
+
+	_ijkScale(&iVec, ijk.i)
+	_ijkScale(&jVec, ijk.j)
+	_ijkScale(&kVec, ijk.k)
+
+	_ijkAdd(&iVec, &jVec, ijk)
+	_ijkAdd(ijk, &kVec, ijk)
+
+	_ijkNormalize(ijk)
 }
 
 // _ijkRotate60cw rotates ijk coordinates 60 degrees clockwise. Works in place.
 //
 // Deprecated: Use (*CoordIJK).Rotate60cw instead.
 func _ijkRotate60cw(ijk *CoordIJK) {
-	ijk.Rotate60cw()
+	// unit vector rotations
+	iVec := CoordIJK{1, 0, 1}
+	jVec := CoordIJK{1, 1, 0}
+	kVec := CoordIJK{0, 1, 1}
+
+	_ijkScale(&iVec, ijk.i)
+	_ijkScale(&jVec, ijk.j)
+	_ijkScale(&kVec, ijk.k)
+
+	_ijkAdd(&iVec, &jVec, ijk)
+	_ijkAdd(ijk, &kVec, ijk)
+
+	_ijkNormalize(ijk)
 }
 
 // _downAp3 finds the normalized ijk coordinates of the hex centered on the
@@ -607,7 +721,19 @@ func _ijkRotate60cw(ijk *CoordIJK) {
 //
 // Deprecated: Use (*CoordIJK).downAp3 instead.
 func _downAp3(ijk *CoordIJK) {
-	ijk.downAp3()
+	// res r unit vectors in res r+1
+	iVec := CoordIJK{2, 0, 1}
+	jVec := CoordIJK{1, 2, 0}
+	kVec := CoordIJK{0, 1, 2}
+
+	_ijkScale(&iVec, ijk.i)
+	_ijkScale(&jVec, ijk.j)
+	_ijkScale(&kVec, ijk.k)
+
+	_ijkAdd(&iVec, &jVec, ijk)
+	_ijkAdd(ijk, &kVec, ijk)
+
+	_ijkNormalize(ijk)
 }
 
 // _downAp3r finds the normalized ijk coordinates of the hex centered on the
@@ -616,7 +742,19 @@ func _downAp3(ijk *CoordIJK) {
 //
 // Deprecated: Use (*CoordIJK).downAp3r instead.
 func _downAp3r(ijk *CoordIJK) {
-	ijk.downAp3r()
+	// res r unit vectors in res r+1
+	iVec := CoordIJK{2, 1, 0}
+	jVec := CoordIJK{0, 2, 1}
+	kVec := CoordIJK{1, 0, 2}
+
+	_ijkScale(&iVec, ijk.i)
+	_ijkScale(&jVec, ijk.j)
+	_ijkScale(&kVec, ijk.k)
+
+	_ijkAdd(&iVec, &jVec, ijk)
+	_ijkAdd(ijk, &kVec, ijk)
+
+	_ijkNormalize(ijk)
 }
 
 // ijkDistance finds the distance between the two coordinates. Returns result.
