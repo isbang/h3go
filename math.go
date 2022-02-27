@@ -27,3 +27,19 @@ func max(a, b int) int {
 	}
 	return a
 }
+
+// _ipow does integer exponentiation efficiently. Taken from StackOverflow.
+//
+// Return the exponentiated value
+func _ipow(base, exp int) int {
+	result := 1
+	for exp > 0 {
+		if exp&1 > 0 {
+			result *= base
+		}
+		exp >>= 1
+		base *= base
+	}
+
+	return result
+}
