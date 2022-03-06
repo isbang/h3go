@@ -24,20 +24,13 @@ type BBox struct {
 	west  float64 // west longitude
 }
 
-/**
- * Whether the given bounding box crosses the antimeridian
- * @param  bbox Bounding box to inspect
- * @return      is transmeridian
- */
+// bboxIsTransmeridian returns whether the given bounding box crosses the
+// antimeridian
 func bboxIsTransmeridian(bbox *BBox) bool {
 	return bbox.east < bbox.west
 }
 
-/**
- * Get the center of a bounding box
- * @param bbox   Input bounding box
- * @param center Output center coordinate
- */
+// bboxCenter gets the center of a bounding box
 func bboxCenter(bbox *BBox, center *GeoCoord) {
 	center.lat = (bbox.north + bbox.south) / 2.0
 	// If the bbox crosses the antimeridian, shift east 360 degrees
@@ -48,12 +41,7 @@ func bboxCenter(bbox *BBox, center *GeoCoord) {
 	center.lon = constrainLng((east + bbox.west) / 2.0)
 }
 
-/**
- * Whether the bounding box contains a given point
- * @param  bbox  Bounding box
- * @param  point Point to test
- * @return       Whether the point is contained
- */
+// bboxContains returns whether the bounding box contains a given point
 func bboxContains(bbox *BBox, point *GeoCoord) bool {
 	if bboxIsTransmeridian(bbox) {
 		return point.lat >= bbox.south && point.lat <= bbox.north &&
@@ -63,23 +51,13 @@ func bboxContains(bbox *BBox, point *GeoCoord) bool {
 		(point.lon >= bbox.west && point.lon <= bbox.east)
 }
 
-/**
- * Whether two bounding boxes are strictly equal
- * @param  b1 Bounding box 1
- * @param  b2 Bounding box 2
- * @return    Whether the boxes are equal
- */
+// bboxEquals returns whether two bounding boxes are strictly equal
 func bboxEquals(b1, b2 *BBox) bool {
 	return b1.north == b2.north && b1.south == b2.south &&
 		b1.east == b2.east && b1.west == b2.west
 }
 
-/**
- * _hexRadiusKm returns the radius of a given hexagon in Km
- *
- * @param h3Index the index of the hexagon
- * @return the radius of the hexagon in Km
- */
+// _hexRadiusKm returns the radius of a given hexagon in Km
 func _hexRadiusKm(h3Index H3Index) float64 {
 	// There is probably a cheaper way to determine the radius of a
 	// hexagon, but this way is conceptually simple
@@ -90,14 +68,8 @@ func _hexRadiusKm(h3Index H3Index) float64 {
 	return PointDistKm(&h3Center, &h3Boundary.verts[0])
 }
 
-/**
- * bboxHexEstimate returns an estimated number of hexagons that fit
- *                 within the cartesian-projected bounding box
- *
- * @param bbox the bounding box to estimate the hexagon fill level
- * @param res the resolution of the H3 hexagons to fill the bounding box
- * @return the estimated number of hexagons to fill the bounding box
- */
+// bboxHexEstimate returns an estimated number of hexagons that fit within the
+// cartesian-projected bounding box
 func bboxHexEstimate(bbox *BBox, res int) int {
 	// Get the area of the pentagon as the maximally-distorted area possible
 	pentagons := make([]H3Index, 12)
@@ -129,15 +101,8 @@ func bboxHexEstimate(bbox *BBox, res int) int {
 	return estimate
 }
 
-/**
- * lineHexEstimate returns an estimated number of hexagons that trace
- *                 the cartesian-projected line
- *
- *  @param origin the origin coordinates
- *  @param destination the destination coordinates
- *  @param res the resolution of the H3 hexagons to trace the line
- *  @return the estimated number of hexagons required to trace the line
- */
+// lineHexEstimate returns an estimated number of hexagons that trace the
+// cartesian-projected line
 func lineHexEstimate(origin *GeoCoord, destination *GeoCoord, res int) int {
 	// Get the area of the pentagon as the maximally-distorted area possible
 	pentagons := make([]H3Index, 12)
