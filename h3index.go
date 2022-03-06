@@ -220,14 +220,14 @@ func (h3 *H3Index) SetReservedBits(v int) {
 func H3_GET_INDEX_DIGIT(h3 H3Index, res int) Direction {
 	resDigit := (MAX_H3_RES - res) * H3_PER_DIGIT_OFFSET
 
-	return Direction((h3 >> resDigit) & H3_DIGIT_MASK)
+	return Direction((uint64(h3) >> resDigit) & H3_DIGIT_MASK)
 }
 
 // GetIndexDigit gets the resolution res integer digit (0-7) of h3.
 func (h3 H3Index) GetIndexDigit(res int) Direction {
 	resDigit := (MAX_H3_RES - res) * H3_PER_DIGIT_OFFSET
 
-	return Direction((h3 >> resDigit) & H3_DIGIT_MASK)
+	return Direction((uint64(h3) >> resDigit) & H3_DIGIT_MASK)
 }
 
 // H3_SET_INDEX_DIGIT sets the resolution res digit of h3 to the integer digit (0-7)
@@ -236,7 +236,7 @@ func (h3 H3Index) GetIndexDigit(res int) Direction {
 func H3_SET_INDEX_DIGIT(h3 *H3Index, res int, digit Direction) {
 	resDigit := (MAX_H3_RES - res) * H3_PER_DIGIT_OFFSET
 
-	*h3 = H3Index(((*h3) & ^(H3_DIGIT_MASK << resDigit)) |
+	*h3 = H3Index((uint64(*h3) & ^(H3_DIGIT_MASK << resDigit)) |
 		(uint64(digit) << resDigit))
 }
 
@@ -244,7 +244,7 @@ func H3_SET_INDEX_DIGIT(h3 *H3Index, res int, digit Direction) {
 func (h3 *H3Index) SetIndexDigit(res int, digit Direction) {
 	resDigit := (MAX_H3_RES - res) * H3_PER_DIGIT_OFFSET
 
-	*h3 = H3Index(((*h3) & ^(H3_DIGIT_MASK << resDigit)) |
+	*h3 = H3Index((uint64(*h3) & ^(H3_DIGIT_MASK << resDigit)) |
 		(uint64(digit) << resDigit))
 }
 
@@ -1087,15 +1087,15 @@ func H3GetFaces(h3 H3Index, out *[]int) {
 
 	// Get all vertices as FaceIJK addresses. For simplicity, always
 	// initialize the array with 6 verts, ignoring the last one for pentagons
-	var fijkVerts [NUM_HEX_VERTS]FaceIJK
+	var fijkVerts []FaceIJK
 	var vertexCount int
 
 	if isPentagon {
 		vertexCount = NUM_PENT_VERTS
-		_faceIjkPentToVerts(&fijk, &res, &fijkVerts)
+		fijkVerts = faceIjkPentToVerts(&fijk, &res)
 	} else {
 		vertexCount = NUM_HEX_VERTS
-		_faceIjkToVerts(&fijk, &res, &fijkVerts)
+		fijkVerts = faceIjkToVerts(&fijk, &res)
 	}
 
 	// We may not use all of the slots in the output array,

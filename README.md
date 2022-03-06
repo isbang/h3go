@@ -4,7 +4,7 @@
 - [x] baseCells.c
 - [ ] bbox.c
 - [x] coordijk.c
-- [ ] faceijk.c
+- [x] faceijk.c
 - [ ] geoCoord.c
 - [x] h3Index.c
 - [ ] h3UniEdge.c
