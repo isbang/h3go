@@ -2,7 +2,7 @@
 
 - [ ] algos.c
 - [x] baseCells.c
-- [ ] bbox.c
+- [x] bbox.c
 - [x] coordijk.c
 - [x] faceijk.c
 - [ ] geoCoord.c
