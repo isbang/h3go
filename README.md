@@ -15,4 +15,4 @@
 - [x] vec2d.c
 - [x] vec3d.c
 - [x] vertex.c
-- [ ] vertexGraph.c
+- [x] vertexGraph.c
