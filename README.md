@@ -7,7 +7,7 @@
 - [x] faceijk.c
 - [ ] geoCoord.c
 - [x] h3Index.c
-- [ ] h3UniEdge.c
+- [x] h3UniEdge.c
 - [ ] linkedGeo.c
 - [ ] localij.c
 - [x] mathExtensions.c
