@@ -192,7 +192,7 @@ func GetH3UnidirectionalEdgeBoundary(edge H3Index, gb *GeoBoundary) {
 	origin := GetOriginH3IndexFromUnidirectionalEdge(edge)
 
 	// Get the start vertex for the edge
-	startVertex := vertexNumForDirection(origin, direction)
+	startVertex := vertexNumForDirection(origin, Direction(direction))
 	if startVertex == INVALID_VERTEX_NUM {
 		// This is not actually an edge (i.e. no valid direction),
 		// so return no vertices.

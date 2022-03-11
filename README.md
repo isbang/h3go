@@ -14,5 +14,5 @@
 - [ ] polygon.c
 - [x] vec2d.c
 - [x] vec3d.c
-- [ ] vertex.c
+- [x] vertex.c
 - [ ] vertexGraph.c
