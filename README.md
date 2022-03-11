@@ -5,7 +5,7 @@
 - [x] bbox.c
 - [x] coordijk.c
 - [x] faceijk.c
-- [ ] geoCoord.c
+- [x] geoCoord.c
 - [x] h3Index.c
 - [x] h3UniEdge.c
 - [ ] linkedGeo.c
