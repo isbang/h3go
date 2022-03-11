@@ -9,7 +9,7 @@
 - [x] h3Index.c
 - [x] h3UniEdge.c
 - [ ] linkedGeo.c
-- [ ] localij.c
+- [x] localij.c
 - [x] mathExtensions.c
 - [ ] polygon.c
 - [x] vec2d.c
